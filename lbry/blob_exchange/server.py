@@ -3,6 +3,7 @@ import binascii
 import logging
 import typing
 from json.decoder import JSONDecodeError
+from lbry.blob_exchange.popularity import popularity_db
 from lbry.blob_exchange.serialization import BlobResponse, BlobRequest, blob_response_types
 from lbry.blob_exchange.serialization import BlobAvailabilityResponse, BlobPriceResponse, BlobDownloadResponse, \
     BlobPaymentAddressResponse
@@ -104,6 +105,7 @@ class BlobServerProtocol(asyncio.Protocol):
                     if sent and sent > 0:
                         self.blob_manager.connection_manager.sent_data(self.peer_address_and_port, sent)
                         log.info("sent %s (%i bytes) to %s:%i", blob_hash, sent, peer_address, peer_port)
+                        popularity_db.register_hit(blob.blob_hash)
                     else:
                         self.close()
                         log.debug("stopped sending %s to %s:%i", blob_hash, peer_address, peer_port)
