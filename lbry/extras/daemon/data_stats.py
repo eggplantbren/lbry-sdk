@@ -45,10 +45,12 @@ class DataStats:
             self.db.execute("""
                 INSERT INTO blob VALUES (?, 1, ?)
                 ON CONFLICT (blob_hash)
-                DO UPDATE SET count_seeds = count_seeds + 1,
-                              last_seeded_epoch = excluded.last_seeded_epoch;""",
+                DO UPDATE SET
+                    count_seeds = count_seeds + 1,
+                    last_seeded_epoch = excluded.last_seeded_epoch;""",
                 item)
         self.db.execute("COMMIT;")
+        self.seeded = []
 
 
     def log_seed(self, blob_hash):
@@ -56,7 +58,7 @@ class DataStats:
         Log that a particular blob was seeded.
         """
         now = time.time()
-        self.seeded.append((blob_hash, now))
+        self.seeded.append((blob_hash, int(now)))
 
         if len(self.seeded) >= 100 or \
             (len(self.seeded) > 0 and now - self.seeded[0][1] >= 3600):
