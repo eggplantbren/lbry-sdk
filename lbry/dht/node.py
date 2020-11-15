@@ -94,7 +94,7 @@ class Node:
         )
         stored_to = [node_id for node_id, contacted in stored_to_tup if contacted]
         if stored_to:
-            log.debug(
+            log.info(
                 "Stored %s to %i of %i attempted peers", binascii.hexlify(hash_value).decode()[:8],
                 len(stored_to), len(peers)
             )
