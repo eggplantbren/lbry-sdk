@@ -38,12 +38,25 @@ class DataStats:
     def setup_database(self):
         self.db.execute("PRAGMA JOURNAL_MODE = WAL;")
         self.db.execute("BEGIN;")
+
         self.db.execute("""
             CREATE TABLE IF NOT EXISTS blob
             (blob_hash        TEXT NOT NULL PRIMARY KEY,
              count_seeds      INTEGER NOT NULL DEFAULT 0,
              last_seeded_time REAL)
             WITHOUT ROWID;""")
+
+        self.db.execute("""
+            CREATE TABLE IF NOT EXISTS hours
+            (year  INTEGER NOT NULL,
+             month INTEGER NOT NULL,
+             day   INTEGER NOT NULL,
+             hour  INTEGER NOT NULL,
+             blobs_up   INTEGER NOT NULL DEFAULT 0,
+             blobs_down INTEGER NOT NULL DEFAULT 0,
+             PRIMARY KEY (year, month, day, hour))
+            WITHOUT ROWID;""")
+
         self.db.execute("COMMIT;")
 
 
