@@ -6,6 +6,11 @@ from json.decoder import JSONDecodeError
 from lbry.blob_exchange.serialization import BlobResponse, BlobRequest, blob_response_types
 from lbry.blob_exchange.serialization import BlobAvailabilityResponse, BlobPriceResponse, BlobDownloadResponse, \
     BlobPaymentAddressResponse
+from lbry.extras.daemon.data_stats import DATA_STATS_ENABLED, DataStats
+
+if DATA_STATS_ENABLED:
+    datastats = DataStats()
+
 
 if typing.TYPE_CHECKING:
     from lbry.blob.blob_manager import BlobManager
@@ -103,6 +108,8 @@ class BlobServerProtocol(asyncio.Protocol):
                     sent = await asyncio.wait_for(blob.sendfile(self), self.transfer_timeout, loop=self.loop)
                     if sent and sent > 0:
                         self.blob_manager.connection_manager.sent_data(self.peer_address_and_port, sent)
+                        if DATA_STATS_ENABLED:
+                            datastats.log_seed(blob.blob_hash)
                         log.info("sent %s (%i bytes) to %s:%i", blob_hash, sent, peer_address, peer_port)
                     else:
                         self.close()
