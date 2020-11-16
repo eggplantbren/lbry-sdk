@@ -11,6 +11,11 @@ if typing.TYPE_CHECKING:
     from lbry.blob.blob_file import AbstractBlob
     from lbry.blob.writer import HashBlobWriter
     from lbry.connection_manager import ConnectionManager
+from lbry.extras.daemon.data_stats import DATA_STATS_ENABLED, DataStats
+
+if DATA_STATS_ENABLED:
+    datastats = DataStats()
+
 
 log = logging.getLogger(__name__)
 
@@ -157,6 +162,9 @@ class BlobExchangeClientProtocol(asyncio.Protocol):
             log.info("%s at %fMB/s", msg,
                      round((float(self._blob_bytes_received) /
                             float(time.perf_counter() - start_time)) / 1000000.0, 2))
+            if DATA_STATS_ENABLED:
+                datastats.log_download()
+
             # await self.blob.finished_writing.wait()  not necessary, but a dangerous change. TODO: is it needed?
             return self._blob_bytes_received, self
         except asyncio.TimeoutError:

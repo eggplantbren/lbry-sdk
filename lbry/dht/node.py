@@ -14,6 +14,12 @@ if typing.TYPE_CHECKING:
     from lbry.dht.peer import PeerManager
     from lbry.dht.peer import KademliaPeer
 
+from lbry.extras.daemon.data_stats import DATA_STATS_ENABLED, DataStats
+
+if DATA_STATS_ENABLED:
+    datastats = DataStats()
+
+
 log = logging.getLogger(__name__)
 
 
@@ -98,6 +104,8 @@ class Node:
                 "Stored %s to %i of %i attempted peers", binascii.hexlify(hash_value).decode()[:8],
                 len(stored_to), len(peers)
             )
+            if DATA_STATS_ENABLED:
+                datastats.log_announcement()
         else:
             log.debug("Failed announcing %s, stored to 0 peers", blob_hash[:8])
         return stored_to
