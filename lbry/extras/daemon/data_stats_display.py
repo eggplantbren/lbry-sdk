@@ -15,13 +15,12 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 # Create the app
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
-# The graph to be given to the app
-graph = dcc.Graph(id="num_streams")
+# The graphs to be given to the app
+graph = dcc.Graph(id="blob_graphs")
 
 app.layout = html.Div(style={"background-color": "#222222",
-                             "color": "#EEEEEE", "width": 1400},
-                      children=[html.H1(children="Data Page"),
-                                html.P(children="This is just a test!"),
+                             "color": "#EEEEEE", "width": 1200},
+                      children=[html.H1("Data Page"),
                                 graph, dcc.Interval(
                                    id='interval-component',
                                    interval=60*1000, # in milliseconds
@@ -30,7 +29,7 @@ app.layout = html.Div(style={"background-color": "#222222",
 
 
 # Multiple components can update everytime interval gets fired.
-@app.callback(Output('num_streams', 'figure'),
+@app.callback([Output("blob_graphs", "figure")],
               [Input('interval-component', 'n_intervals')])
 def update_data(n):
 
@@ -48,23 +47,31 @@ def update_data(n):
         down.append(row[2])
         announce.append(row[3])
 
-    fig = make_subplots(rows=2, cols=1)
+    for i in range(len(ts)):
+        ts[i] = datetime.datetime.fromtimestamp(ts[i])
+
+    fig = go.Figure()
     fig.update_layout(
                         {
-                            "title": "Blobs Seeded",
+                            "title": "LBRY Data Network Information",
                             "plot_bgcolor":  "#222222",
                             "paper_bgcolor": "#222222",
                             "xaxis": {"title": "Time"},
                             "yaxis": {"title": "Blobs"},
                             "font": {"color": "#EEEEEE"},
-                            "width": 1400, "height": 1400
+                            "width": 1200, "height": 800
                         }
                      )
 
-    bar = go.Bar(x=ts, y=up, name="Blobs Uploaded")
-    fig.add_trace(bar, row=1, col=1)
+    bar1 = go.Bar(x=ts, y=down, name="Downloaded", marker_color="red")
+    bar2 = go.Bar(x=ts, y=up, name="Uploaded", marker_color="rgb(100, 255, 100)")
+    bar3 = go.Bar(x=ts, y=announce, name="Announced", marker_color="rgb(100, 100, 255)")
+    fig.add_trace(bar1)
+    fig.add_trace(bar2)
+    fig.add_trace(bar3)
+    fig.update_layout(barmode="group")
 
-    return fig
+    return [fig]
 
 
 if __name__ == '__main__':
