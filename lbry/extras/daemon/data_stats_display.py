@@ -42,7 +42,7 @@ def update_data(n):
     announce = []
     now = time.time()
     for row in db.execute("SELECT * FROM hour WHERE start_time >= ?;",
-                          (time.time() - 7*86400.0, )):
+                          (time.time() - 3*86400.0, )):
         ts.append(row[0])
         up.append(row[1])
         down.append(row[2])
