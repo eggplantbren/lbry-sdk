@@ -1,5 +1,6 @@
 import apsw
 import datetime
+from lbry.conf import Config
 import time
 
 # TODO: Use conf data_dir
@@ -116,4 +117,20 @@ class DataStats:
 
         self.db.execute("COMMIT;")
 
+    def find_unpopular_streams(self):
+        self.db.execute("BEGIN;")
+        self.db.execute("ATTACH DATABASE '/home/brewer/.local/share/lbry/lbrynet/lbrynet.sqlite' AS lbrynet;")
+
+        # This query finds the 10 least popular streams for seeding
+        for row in db.execute("""
+            SELECT sb.stream_hash, MAX(mb.seed_count) max_seed_count,
+                MAX(mb.last_seed_time) max_seed_time FROM
+                lbrynet.blob lb
+                INNER JOIN lbrynet.stream_blob sb ON lb.blob_hash = sb.blob_hash
+                INNER JOIN main.blob mb ON mb.blob_hash = lb.blob_hash
+            GROUP BY sb.stream_hash
+            ORDER BY max_seed_count ASC, max_seed_time ASC
+            LIMIT 10;"""):
+            pass
+        self.db.execute("COMMIT;")
 
