@@ -108,9 +108,9 @@ class BlobServerProtocol(asyncio.Protocol):
                     sent = await asyncio.wait_for(blob.sendfile(self), self.transfer_timeout, loop=self.loop)
                     if sent and sent > 0:
                         self.blob_manager.connection_manager.sent_data(self.peer_address_and_port, sent)
+                        log.info("sent %s (%i bytes) to %s:%i", blob_hash, sent, peer_address, peer_port)
                         if DATA_STATS_ENABLED:
                             datastats.log_seed(blob.blob_hash)
-                        log.info("sent %s (%i bytes) to %s:%i", blob_hash, sent, peer_address, peer_port)
                     else:
                         self.close()
                         log.debug("stopped sending %s to %s:%i", blob_hash, peer_address, peer_port)
