@@ -122,6 +122,8 @@ class DataStats:
         self.db.execute("ATTACH DATABASE '/home/brewer/.local/share/lbry/lbrynet/lbrynet.sqlite' AS lbrynet;")
 
         # This query finds the 10 least popular streams for seeding
+        # TODO: Use the timestamp that the stream was added, to avoid penalising
+        # things you just downloaded
         for row in db.execute("""
             SELECT sb.stream_hash, MAX(mb.seed_count) max_seed_count,
                 MAX(mb.last_seed_time) max_seed_time FROM
