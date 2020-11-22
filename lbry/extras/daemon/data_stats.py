@@ -125,24 +125,46 @@ class DataStats:
         self.db.execute("COMMIT;")
         self.lock.release()
 
-#    def find_unpopular_streams(self):
-#        conn = apsw.Connection(DB_FILENAME, flags=apsw.SQLITE_OPEN_READONLY)
-#        db = conn.cursor()
-#        self.db.execute("BEGIN;")
-#        self.db.execute("ATTACH DATABASE '/home/brewer/.local/share/lbry/lbrynet/lbrynet.sqlite' AS lbrynet;")
+def find_unpopular_streams():
+    """
+    Find the least-seeded streams (recently)
+    """
+    # Grab current time
+    now = time.time()
 
-#        # This query finds the 10 least popular streams for seeding
-#        # TODO: Use the timestamp that the stream was added, to avoid penalising
-#        # things you just downloaded
-#        for row in db.execute("""
-#            SELECT sb.stream_hash, MAX(mb.seed_count) max_seed_count,
-#                MAX(mb.last_seed_time) max_seed_time FROM
-#                lbrynet.blob lb
-#                INNER JOIN lbrynet.stream_blob sb ON lb.blob_hash = sb.blob_hash
-#                INNER JOIN main.blob mb ON mb.blob_hash = lb.blob_hash
-#            GROUP BY sb.stream_hash
-#            ORDER BY max_seed_count ASC, max_seed_time ASC
-#            LIMIT 10;"""):
-#            pass
-#        self.db.execute("COMMIT;")
+    # Read-only connection
+    conn = apsw.Connection(DB_FILENAME, flags=apsw.SQLITE_OPEN_READONLY)
+    db = conn.cursor()
+    db.execute("ATTACH DATABASE '/home/brewer/.local/share/lbry/lbrynet/lbrynet.sqlite' AS lbrynet;")
+
+    # Map from stream hash to popularity of most popular blob in the stream
+    stream_popularities = {}
+
+    # Get *current* blobs and popularities
+    for row in db.execute("""
+        SELECT sb.stream_hash, lb.blob_hash, mb.last_seed_time, mb.popularity
+            FROM
+            lbrynet.blob lb
+            INNER JOIN lbrynet.stream_blob sb ON lb.blob_hash = sb.blob_hash
+            INNER JOIN main.blob mb ON mb.blob_hash = lb.blob_hash
+        LIMIT 10;"""):
+        stream_hash, blob_hash, last_seed_time, popularity = row
+
+        # Decay popularity
+        popularity *= math.exp(-INV_WEEK*(now - last_seed_time))
+
+        # Insert if necessary
+        if stream_hash not in stream_popularities:
+            stream_popularities[stream_hash] = 0.0
+
+        if popularity > stream_popularities[stream_hash]:
+            stream_popularities[stream_hash] = popularity
+
+    # Sort in ascending order of popularity. Result is a list of tuples
+    result = []
+    for stream_hash in stream_popularities:
+        result.append((stream_hash, stream_popularities[stream_hash]))
+    result = sorted(result, key = lambda x: x[1])
+
+    return result
 
