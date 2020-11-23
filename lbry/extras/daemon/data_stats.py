@@ -173,3 +173,10 @@ def stream_popularity():
 
     return result
 
+
+def get_unpopular_streams(limit=10):
+    """
+    Get a given number of unpopular streams
+    """
+    return [s[0] for s in stream_popularity()[0:limit]]
+
