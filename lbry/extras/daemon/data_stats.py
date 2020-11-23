@@ -146,7 +146,9 @@ def stream_popularity():
             FROM
             lbrynet.blob lb
             LEFT JOIN lbrynet.stream_blob sb ON lb.blob_hash = sb.blob_hash
-            LEFT JOIN main.blob mb ON mb.blob_hash = lb.blob_hash;"""):
+            LEFT JOIN main.blob mb ON mb.blob_hash = lb.blob_hash
+            INNER JOIN lbrynet.file lf ON lf.stream_hash = sb.stream_hash 
+        WHERE lf.added_on < ?;""", (now - 7*86400, )):
         stream_hash, blob_hash, last_seed_time, popularity = row
 
         if stream_hash is not None: # Don't bother with SD blobs
