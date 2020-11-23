@@ -23,7 +23,7 @@ app.layout = html.Div(style={"background-color": "#222222",
                       children=[html.H1("Data Page"),
                                 graph, dcc.Interval(
                                    id='interval-component',
-                                   interval=60*1000, # in milliseconds
+                                   interval=240*1000, # in milliseconds
                                    n_intervals=0
                                   )])
 
