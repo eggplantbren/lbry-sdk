@@ -142,23 +142,26 @@ def stream_popularity():
 
     # Get *current* blobs and popularities
     for row in db.execute("""
-        SELECT sb.stream_hash, lb.blob_hash, mb.last_seed_time, mb.popularity
+        SELECT sb.stream_hash, lb.blob_hash, mb.last_seed_time, mb.popularity,
+               lf.added_on
             FROM
             lbrynet.blob lb
             LEFT JOIN lbrynet.stream_blob sb ON lb.blob_hash = sb.blob_hash
             LEFT JOIN main.blob mb ON mb.blob_hash = lb.blob_hash
-            INNER JOIN lbrynet.file lf ON lf.stream_hash = sb.stream_hash 
-        WHERE lf.added_on < ?;""", (now - 7*86400, )):
-        stream_hash, blob_hash, last_seed_time, popularity = row
+            LEFT JOIN lbrynet.file lf ON lf.stream_hash = sb.stream_hash;"""):
+        stream_hash, blob_hash, last_seed_time, popularity, added_on = row
 
         if stream_hash is not None: # Don't bother with SD blobs
+
             # Handle null popularity because the blob hasn't been seeded
             # and thus isn't in our blob table
             if popularity is None:
-                popularity = 0.0
-            else:
-                # Decay popularity
-                popularity *= math.exp(-INV_WEEK*(now - last_seed_time))
+                # Unseeded blobs get a fake seed at the time the file was added
+                popularity = 1.0
+                last_seed_time = added_on
+
+            # Decay popularity from last_seed_time to current time
+            popularity *= math.exp(-INV_WEEK*(now - last_seed_time))
 
             # Insert if necessary
             if stream_hash not in stream_popularities:
