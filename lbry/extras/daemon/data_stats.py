@@ -125,9 +125,9 @@ class DataStats:
         self.db.execute("COMMIT;")
         self.lock.release()
 
-def find_unpopular_streams():
+def stream_popularity():
     """
-    Find the least-seeded streams (recently)
+    Measure the popularity of all streams we have
     """
     # Grab current time
     now = time.time()
@@ -145,20 +145,25 @@ def find_unpopular_streams():
         SELECT sb.stream_hash, lb.blob_hash, mb.last_seed_time, mb.popularity
             FROM
             lbrynet.blob lb
-            INNER JOIN lbrynet.stream_blob sb ON lb.blob_hash = sb.blob_hash
-            INNER JOIN main.blob mb ON mb.blob_hash = lb.blob_hash
-        LIMIT 10;"""):
+            LEFT JOIN lbrynet.stream_blob sb ON lb.blob_hash = sb.blob_hash
+            LEFT JOIN main.blob mb ON mb.blob_hash = lb.blob_hash;"""):
         stream_hash, blob_hash, last_seed_time, popularity = row
 
-        # Decay popularity
-        popularity *= math.exp(-INV_WEEK*(now - last_seed_time))
+        if stream_hash is not None: # Don't bother with SD blobs
+            # Handle null popularity because the blob hasn't been seeded
+            # and thus isn't in our blob table
+            if popularity is None:
+                popularity = 0.0
+            else:
+                # Decay popularity
+                popularity *= math.exp(-INV_WEEK*(now - last_seed_time))
 
-        # Insert if necessary
-        if stream_hash not in stream_popularities:
-            stream_popularities[stream_hash] = 0.0
+            # Insert if necessary
+            if stream_hash not in stream_popularities:
+                stream_popularities[stream_hash] = 0.0
 
-        if popularity > stream_popularities[stream_hash]:
-            stream_popularities[stream_hash] = popularity
+            if popularity > stream_popularities[stream_hash]:
+                stream_popularities[stream_hash] = popularity
 
     # Sort in ascending order of popularity. Result is a list of tuples
     result = []
