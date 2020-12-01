@@ -120,52 +120,52 @@ class TrendingDB:
         if self.initialised:
             return
 
-        trending_log("Initialising trending database...")
+#        trending_log("Initialising trending database...")
 
-        # The need for speed
-        self.execute("PRAGMA JOURNAL_MODE=OFF;")
-        self.execute("PRAGMA SYNCHRONOUS=0;")
+#        # The need for speed
+#        self.execute("PRAGMA JOURNAL_MODE=OFF;")
+#        self.execute("PRAGMA SYNCHRONOUS=0;")
 
-        self.begin()
+#        self.begin()
 
-        # Create the tables
-        self.execute("""
-            CREATE TABLE IF NOT EXISTS claims
-                (claim_hash     BYTES PRIMARY KEY,
-                 lbc            REAL NOT NULL DEFAULT 0.0,
-                 trending_score REAL NOT NULL DEFAULT 0.0)
-            WITHOUT ROWID;""")
+#        # Create the tables
+#        self.execute("""
+#            CREATE TABLE IF NOT EXISTS claims
+#                (claim_hash     BYTES PRIMARY KEY,
+#                 lbc            REAL NOT NULL DEFAULT 0.0,
+#                 trending_score REAL NOT NULL DEFAULT 0.0)
+#            WITHOUT ROWID;""")
 
-        self.execute("""
-            CREATE TABLE IF NOT EXISTS spikes
-                (id         INTEGER PRIMARY KEY,
-                 claim_hash BYTES NOT NULL,
-                 height     INTEGER NOT NULL,
-                 mass       REAL NOT NULL,
-                 FOREIGN KEY (claim_hash)
-                    REFERENCES claims (claim_hash));""")
+#        self.execute("""
+#            CREATE TABLE IF NOT EXISTS spikes
+#                (id         INTEGER PRIMARY KEY,
+#                 claim_hash BYTES NOT NULL,
+#                 height     INTEGER NOT NULL,
+#                 mass       REAL NOT NULL,
+#                 FOREIGN KEY (claim_hash)
+#                    REFERENCES claims (claim_hash));""")
 
-        # Clear out any existing data
-        self.execute("DELETE FROM claims;")
-        self.execute("DELETE FROM spikes;")
+#        # Clear out any existing data
+#        self.execute("DELETE FROM claims;")
+#        self.execute("DELETE FROM spikes;")
 
-        # Create indexes
-        self.execute("CREATE INDEX idx1 ON spikes (claim_hash, height, mass);")
-        self.execute("CREATE INDEX idx2 ON spikes (claim_hash, height, mass DESC);")
-        self.execute("CREATE INDEX idx3 on claims (lbc DESC, claim_hash, trending_score);")
+#        # Create indexes
+#        self.execute("CREATE INDEX idx1 ON spikes (claim_hash, height, mass);")
+#        self.execute("CREATE INDEX idx2 ON spikes (claim_hash, height, mass DESC);")
+#        self.execute("CREATE INDEX idx3 on claims (lbc DESC, claim_hash, trending_score);")
 
-        # Import data from claims.db
-        for row in db.execute("""
-                              SELECT claim_hash,
-                                     1E-8*(amount + support_amount) AS lbc,
-                                     trending_mixed
-                              FROM claim;
-                              """):
-            self.execute("INSERT INTO claims VALUES (?, ?, ?);", row)
-        self.commit()
+##        # Import data from claims.db
+##        for row in db.execute("""
+##                              SELECT claim_hash,
+##                                     1E-8*(amount + support_amount) AS lbc,
+##                                     trending_mixed
+##                              FROM claim;
+##                              """):
+##            self.execute("INSERT INTO claims VALUES (?, ?, ?);", row)
+#        self.commit()
 
         self.initialised = True
-        trending_log("done.\n")
+#        trending_log("done.\n")
 
     def apply_spikes(self, height):
         """
@@ -374,7 +374,7 @@ def spike_mass(x, x_old):
 
 
 def run(db, height, final_height, recalculate_claim_hashes):
-    if height < final_height - 5*HALF_LIFE:
+    if True:
         trending_log(f"Skipping trending calculations at block {height}.\n")
         return
 
