@@ -135,39 +135,6 @@ class SQLDB:
     """
 
     SEARCH_INDEXES = """
-        -- used by any tag clouds
-        create index if not exists tag_tag_idx on tag (tag, claim_hash);
-
-        -- naked order bys (no filters)
-        create unique index if not exists claim_release_idx on claim (release_time, claim_hash);
-        create unique index if not exists claim_trending_idx on claim (trending_group, trending_mixed, claim_hash);
-        create unique index if not exists claim_effective_amount_idx on claim (effective_amount, claim_hash);
-
-        -- claim_type filter + order by
-        create unique index if not exists claim_type_release_idx on claim (release_time, claim_type, claim_hash);
-        create unique index if not exists claim_type_trending_idx on claim (trending_group, trending_mixed, claim_type, claim_hash);
-        create unique index if not exists claim_type_effective_amount_idx on claim (effective_amount, claim_type, claim_hash);
-
-        -- stream_type filter + order by
-        create unique index if not exists stream_type_release_idx on claim (stream_type, release_time, claim_hash);
-        create unique index if not exists stream_type_trending_idx on claim (stream_type, trending_group, trending_mixed, claim_hash);
-        create unique index if not exists stream_type_effective_amount_idx on claim (stream_type, effective_amount, claim_hash);
-
-        -- channel_hash filter + order by
-        create unique index if not exists channel_hash_release_idx on claim (channel_hash, release_time, claim_hash);
-        create unique index if not exists channel_hash_trending_idx on claim (channel_hash, trending_group, trending_mixed, claim_hash);
-        create unique index if not exists channel_hash_effective_amount_idx on claim (channel_hash, effective_amount, claim_hash);
-
-        -- duration filter + order by
-        create unique index if not exists duration_release_idx on claim (duration, release_time, claim_hash);
-        create unique index if not exists duration_trending_idx on claim (duration, trending_group, trending_mixed, claim_hash);
-        create unique index if not exists duration_effective_amount_idx on claim (duration, effective_amount, claim_hash);
-
-        -- fee_amount + order by
-        create unique index if not exists fee_amount_release_idx on claim (fee_amount, release_time, claim_hash);
-        create unique index if not exists fee_amount_trending_idx on claim (fee_amount, trending_group, trending_mixed, claim_hash);
-        create unique index if not exists fee_amount_effective_amount_idx on claim (fee_amount, effective_amount, claim_hash);
-
         -- TODO: verify that all indexes below are used
         create index if not exists claim_height_normalized_idx on claim (height, normalized asc);
         create index if not exists claim_resolve_idx on claim (normalized, claim_id);
@@ -177,15 +144,9 @@ class SQLDB:
         create index if not exists claim_signature_valid_idx on claim (signature_valid);
     """
 
-    TAG_INDEXES = '\n'.join(
-        f"create unique index if not exists tag_{tag_key}_idx on tag (tag, claim_hash) WHERE tag='{tag_value}';"
-        for tag_value, tag_key in COMMON_TAGS.items()
-    )
+    TAG_INDEXES = ""
 
-    LANGUAGE_INDEXES = '\n'.join(
-        f"create unique index if not exists language_{language}_idx on language (language, claim_hash) WHERE language='{language}';"
-        for language in INDEXED_LANGUAGES
-    )
+    LANGUAGE_INDEXES = ""
 
     CREATE_TABLES_QUERY = (
         CREATE_CLAIM_TABLE +
@@ -232,6 +193,7 @@ class SQLDB:
             return True
         self.db.setexectrace(exec_factory)
         self.execute(self.PRAGMAS)
+        self.execute("pragma synchronous = 0;")
         self.execute(self.CREATE_TABLES_QUERY)
         register_canonical_functions(self.db)
         self.state_manager = Manager()
@@ -316,7 +278,11 @@ class SQLDB:
         self.execute('begin;')
 
     def commit(self):
+        print(self.execute("pragma synchronous;").fetchall(),
+              self.execute("pragma journal_mode;").fetchall())
         self.execute('commit;')
+        out = self.execute('pragma main.wal_checkpoint(truncate);').fetchall()
+        print(out)
 
     def _upsertable_claims(self, txos: List[Output], header, clear_first=False):
         claim_hashes, claims, tags, languages = set(), [], {}, {}
