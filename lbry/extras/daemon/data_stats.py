@@ -19,9 +19,11 @@ class DataStats:
     """
 
     def __init__(self):
+        LOCK.acquire()
         self.conn = apsw.Connection(DB_FILENAME)
         self.conn.createscalarfunction("exp", math.exp, 1)
         self.db = self.conn.cursor()
+        LOCK.release()
         self.setup_database()
 
     def __del__(self):
@@ -122,6 +124,15 @@ class DataStats:
             ON CONFLICT (start_time)
             DO UPDATE SET blobs_announced = blobs_announced + 1;
             """, (int(hour.timestamp()), ))
+        self.db.execute("COMMIT;")
+        LOCK.release()
+
+
+    def delete_blobs(self, blob_hashes):
+        LOCK.acquire()
+        self.db.execute("BEGIN;")
+        self.db.executemany("DELETE FROM blob WHERE blob_hash = ?;",
+                            blob_hashes)
         self.db.execute("COMMIT;")
         LOCK.release()
 
