@@ -13,6 +13,10 @@ from lbry.wallet.transaction import Transaction, Output
 from lbry.schema.claim import Claim
 from lbry.dht.constants import DATA_EXPIRATION
 from lbry.blob.blob_info import BlobInfo
+from lbry.extras.daemon.data_stats import DATA_STATS_ENABLED, DataStats
+
+if DATA_STATS_ENABLED:
+    datastats = DataStats()
 
 if typing.TYPE_CHECKING:
     from lbry.blob.blob_file import BlobFile
@@ -200,6 +204,8 @@ def delete_stream(transaction: sqlite3.Connection, descriptor: 'StreamDescriptor
     transaction.execute("delete from stream_blob where stream_hash=?", (descriptor.stream_hash,)).fetchall()
     transaction.execute("delete from stream where stream_hash=? ", (descriptor.stream_hash,)).fetchall()
     transaction.executemany("delete from blob where blob_hash=?", blob_hashes).fetchall()
+    if DATA_STATS_ENABLED:
+        datastats.delete_blobs(blob_hashes)
 
 
 def delete_torrent(transaction: sqlite3.Connection, bt_infohash: str):
@@ -430,6 +436,8 @@ class SQLiteStorage(SQLiteMixin):
             transaction.executemany(
                 "delete from blob where blob_hash=?;", ((blob_hash,) for blob_hash in blob_hashes)
             ).fetchall()
+            if DATA_STATS_ENABLED:
+                datastats.delete_blobs(blob_hashes)
         return self.db.run_with_foreign_keys_disabled(delete_blobs)
 
     def get_all_blob_hashes(self):

@@ -9,6 +9,7 @@ import time
 DB_FILENAME = "/home/brewer/.local/share/lbry/lbrynet/data_stats.db"
 DATA_STATS_ENABLED = True
 INV_WEEK = 1.0/(7*86400)
+LOCK = threading.Lock()
 
 class DataStats:
     """
@@ -18,7 +19,6 @@ class DataStats:
     """
 
     def __init__(self):
-        self.lock = threading.Lock()
         self.conn = apsw.Connection(DB_FILENAME)
         self.conn.createscalarfunction("exp", math.exp, 1)
         self.db = self.conn.cursor()
@@ -28,7 +28,7 @@ class DataStats:
         self.conn.close()
 
     def setup_database(self):
-        self.lock.acquire()
+        LOCK.acquire()
         self.db.execute("PRAGMA SYNCHRONOUS = 0;")
         self.db.execute("PRAGMA JOURNAL_MODE = WAL;")
         self.db.execute("BEGIN;")
@@ -50,7 +50,7 @@ class DataStats:
             WITHOUT ROWID;""")
 
         self.db.execute("COMMIT;")
-        self.lock.release()
+        LOCK.release()
 
 
     def log_seed(self, blob_hash):
@@ -62,7 +62,7 @@ class DataStats:
         hour = datetime.datetime.fromtimestamp(now)
         hour = hour.replace(minute=0, second=0, microsecond=0)
 
-        self.lock.acquire()
+        LOCK.acquire()
         self.db.execute("BEGIN;")
 
         # Upsert
@@ -82,7 +82,7 @@ class DataStats:
             """, (int(hour.timestamp()), ))
 
         self.db.execute("COMMIT;")
-        self.lock.release()
+        LOCK.release()
 
 
     def log_download(self):
@@ -94,7 +94,7 @@ class DataStats:
         hour = hour.replace(minute=0, second=0, microsecond=0)
 
         # Update hour table
-        self.lock.acquire()
+        LOCK.acquire()
         self.db.execute("BEGIN;")
         self.db.execute("""
             INSERT INTO hour VALUES (?, 0, 1, 0)
@@ -102,7 +102,7 @@ class DataStats:
             DO UPDATE SET blobs_down = blobs_down + 1;
             """, (int(hour.timestamp()), ))
         self.db.execute("COMMIT;")
-        self.lock.release()
+        LOCK.release()
 
 
 
@@ -115,7 +115,7 @@ class DataStats:
         hour = hour.replace(minute=0, second=0, microsecond=0)
 
         # Update hour table
-        self.lock.acquire()
+        LOCK.acquire()
         self.db.execute("BEGIN;")
         self.db.execute("""
             INSERT INTO hour VALUES (?, 0, 0, 1)
@@ -123,7 +123,7 @@ class DataStats:
             DO UPDATE SET blobs_announced = blobs_announced + 1;
             """, (int(hour.timestamp()), ))
         self.db.execute("COMMIT;")
-        self.lock.release()
+        LOCK.release()
 
 def stream_popularity():
     """
