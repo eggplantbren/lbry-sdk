@@ -159,7 +159,7 @@ class AIOSQLite:
                     await self.read_ready.wait()
                     still_waiting = True
                 if self._closing:
-                    raise asyncio.CancelledError
+                    raise asyncio.CancelledError()
                 return await asyncio.get_event_loop().run_in_executor(
                     self.reader_executor, read_only_fn, sql, parameters
                 )
@@ -203,7 +203,7 @@ class AIOSQLite:
         try:
             async with self.write_lock:
                 if self._closing:
-                    raise asyncio.CancelledError
+                    raise asyncio.CancelledError()
                 return await asyncio.get_event_loop().run_in_executor(
                     self.writer_executor, lambda: self.__run_transaction(fun, *args, **kwargs)
                 )
@@ -240,7 +240,7 @@ class AIOSQLite:
         try:
             async with self.write_lock:
                 if self._closing:
-                    raise asyncio.CancelledError
+                    raise asyncio.CancelledError()
                 return await asyncio.get_event_loop().run_in_executor(
                     self.writer_executor, self.__run_transaction_with_foreign_keys_disabled, fun, args, kwargs
                 )
@@ -574,7 +574,7 @@ def get_and_reserve_spendable_utxos(transaction: sqlite3.Connection, accounts: L
 
 class Database(SQLiteMixin):
 
-    SCHEMA_VERSION = "1.3"
+    SCHEMA_VERSION = "1.4"
 
     PRAGMAS = """
         pragma journal_mode=WAL;
