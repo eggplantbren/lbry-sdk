@@ -1,6 +1,7 @@
 import asyncio
 import typing
 import logging
+import random
 if typing.TYPE_CHECKING:
     from lbry.dht.node import Node
     from lbry.extras.daemon.storage import SQLiteStorage
@@ -18,6 +19,7 @@ class BlobAnnouncer:
 
     async def _submit_announcement(self, blob_hash):
         try:
+            await asyncio.sleep(random.uniform(0.0, 300.0), loop=self.loop)
             peers = len(await self.node.announce_blob(blob_hash))
             if peers > 4:
                 return blob_hash

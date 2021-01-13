@@ -80,6 +80,7 @@ class Node:
             await fut
 
     async def announce_blob(self, blob_hash: str) -> typing.List[bytes]:
+        log.info(f"Begin announcing blob {blob_hash[0:8]}")
         hash_value = binascii.unhexlify(blob_hash.encode())
         assert len(hash_value) == constants.HASH_LENGTH
         peers = await self.peer_search(hash_value)
@@ -94,7 +95,7 @@ class Node:
         )
         stored_to = [node_id for node_id, contacted in stored_to_tup if contacted]
         if stored_to:
-            log.debug(
+            log.info(
                 "Stored %s to %i of %i attempted peers", binascii.hexlify(hash_value).decode()[:8],
                 len(stored_to), len(peers)
             )
